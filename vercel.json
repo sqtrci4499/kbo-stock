@@ -1,0 +1,21 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "regions": ["icn1"],
+  "functions": {
+    "src/app/api/cron/daily-update/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/admin/daily-update/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/daily-update",
+      "schedule": "59 14 * * *"
+    }
+  ]
+}

@@ -1,0 +1,302 @@
+// =====================================================
+// KBO STOCK - Prisma Schema
+// 
+// [중요] 이 프로젝트는 raw pg 드라이버를 사용합니다.
+// Prisma는 Studio(GUI) 및 타입 참조용으로만 사용합니다.
+// 실제 테이블 생성: prisma/init.sql
+// 데이터 입력:     npm run db:seed
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── users ──────────────────────────────────────────
+model User {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nickname   String   @unique @db.VarChar(50)
+  email      String   @unique @db.VarChar(255)
+  password   String   @db.VarChar(255)
+  role       String   @default("user") @db.VarChar(20)
+  status     String   @default("active") @db.VarChar(20) // active | inactive | deleted
+  cash       BigInt   @default(10000000)
+  totalAsset BigInt   @default(10000000) @map("total_asset")
+  profitRate Float    @default(0) @map("profit_rate")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  orders     Order[]
+  trades     Trade[]
+  portfolios    Portfolio[]
+  notices       Notice[]      @relation("NoticeAuthor")
+  posts         Post[]        @relation("PostAuthor")
+  comments      Comment[]     @relation("CommentAuthor")
+  notifications Notification[]
+  postLikes     PostLike[]
+
+  @@map("users")
+}
+
+// ── teams ──────────────────────────────────────────
+model Team {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String   @unique @db.VarChar(50)
+  shortName    String   @unique @map("short_name") @db.VarChar(20)
+  logoEmoji    String   @default("⚾") @map("logo_emoji") @db.VarChar(10)
+  colorPrimary String   @default("#1a1a2e") @map("color_primary") @db.VarChar(7)
+  totalShares  Int      @default(1000000) @map("total_shares")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  prices     TeamPrice[]
+  stats      TeamStat?
+  orders     Order[]
+  trades     Trade[]
+  portfolios Portfolio[]
+  homeGames  GameResult[] @relation("HomeTeam")
+  aiPrediction AiPrediction?
+  awayGames  GameResult[] @relation("AwayTeam")
+
+  @@map("teams")
+}
+
+// ── team_prices ────────────────────────────────────
+model TeamPrice {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId     String   @map("team_id") @db.Uuid
+  date       DateTime @db.Date
+  open       Float
+  high       Float
+  low        Float
+  close      Float
+  prevClose  Float?   @map("prev_close")
+  changeRate Float?   @default(0) @map("change_rate")
+  volume     Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([teamId, date])
+  @@index([teamId, date(sort: Desc)])
+  @@map("team_prices")
+}
+
+// ── team_stats ─────────────────────────────────────
+model TeamStat {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId      String   @unique @map("team_id") @db.Uuid
+  rank        Int      @default(1)
+  wins        Int      @default(0)
+  losses      Int      @default(0)
+  draws       Int      @default(0)
+  winRate     Float    @default(0) @map("win_rate")
+  runDiff     Int      @default(0) @map("run_diff")
+  streak      Int      @default(0)
+  last5       String   @default("") @map("last5") @db.VarChar(10)
+  holderCount Int      @default(0) @map("holder_count")
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@map("team_stats")
+}
+
+// ── orders ─────────────────────────────────────────
+model Order {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  teamId     String   @map("team_id") @db.Uuid
+  orderType  String   @map("order_type") @db.VarChar(10)
+  priceType  String   @map("price_type") @db.VarChar(10)
+  limitPrice Float?   @map("limit_price")
+  quantity   Int
+  filledQty  Int      @default(0) @map("filled_qty")
+  status     String   @default("pending") @db.VarChar(20)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  user   User    @relation(fields: [userId], references: [id])
+  team   Team    @relation(fields: [teamId], references: [id])
+  trades Trade[]
+
+  @@index([userId, status])
+  @@index([teamId, status])
+  @@map("orders")
+}
+
+// ── trades ─────────────────────────────────────────
+model Trade {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String   @map("order_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  teamId      String   @map("team_id") @db.Uuid
+  tradeType   String   @map("trade_type") @db.VarChar(10)
+  price       Float
+  quantity    Int
+  totalAmount BigInt   @map("total_amount")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  team  Team  @relation(fields: [teamId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([teamId, createdAt(sort: Desc)])
+  @@map("trades")
+}
+
+// ── portfolios ─────────────────────────────────────
+model Portfolio {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  teamId        String   @map("team_id") @db.Uuid
+  quantity      Int      @default(0)
+  avgBuyPrice   Float    @map("avg_buy_price")
+  totalInvested BigInt   @map("total_invested")
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId])
+  @@index([userId])
+  @@map("portfolios")
+}
+
+// ── game_results ───────────────────────────────────
+model GameResult {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  homeTeamId   String   @map("home_team_id") @db.Uuid
+  awayTeamId   String   @map("away_team_id") @db.Uuid
+  homeScore    Int?     @map("home_score")
+  awayScore    Int?     @map("away_score")
+  gameDate     DateTime @map("game_date") @db.Date
+  status       String   @default("scheduled") @db.VarChar(20)
+  priceApplied Boolean  @default(false) @map("price_applied")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  homeTeam Team @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam Team @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  @@index([gameDate])
+  @@map("game_results")
+}
+
+// ── notices ────────────────────────────────────────
+model Notice {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  title     String   @db.VarChar(200)
+  content   String
+  isPinned  Boolean  @default(false) @map("is_pinned")
+  views     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  author User @relation("NoticeAuthor", fields: [authorId], references: [id])
+
+  @@map("notices")
+}
+
+// ── posts ──────────────────────────────────────────
+model Post {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  teamId    String?  @map("team_id") @db.Uuid
+  title     String   @db.VarChar(200)
+  content   String
+  likes     Int      @default(0)
+  views     Int      @default(0)
+  isDeleted Boolean  @default(false) @map("is_deleted")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  author   User      @relation("PostAuthor", fields: [authorId], references: [id])
+  comments Comment[]
+  postLikes PostLike[]
+
+  @@index([teamId, createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+// ── comments ───────────────────────────────────────
+model Comment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  content   String
+  likes     Int      @default(0)
+  isDeleted Boolean  @default(false) @map("is_deleted")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  post   Post @relation(fields: [postId], references: [id])
+  author User @relation("CommentAuthor", fields: [authorId], references: [id])
+
+  @@index([postId, createdAt(sort: Asc)])
+  @@map("comments")
+}
+
+// ── notifications ──────────────────────────────────
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   @db.VarChar(30)
+  title     String   @db.VarChar(100)
+  message   String   @db.VarChar(500)
+  teamId    String?  @map("team_id") @db.Uuid
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ── post_likes ─────────────────────────────────────
+model PostLike {
+  postId    String   @map("post_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([postId, userId])
+  @@map("post_likes")
+}
+
+// ── ai_predictions (v9) ─────────────────────────────
+model AiPrediction {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId         String   @unique @map("team_id") @db.Uuid
+  aiScore        Int      @default(50) @map("ai_score")
+  stars          Int      @default(3)
+  recommendation String   @default("보유") @db.VarChar(20)
+  comment        String   @default("")
+  factors        Json?
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@map("ai_predictions")
+}
+
+// ── daily_update_log (v9) ───────────────────────────
+model DailyUpdateLog {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  success      Boolean
+  gamesSynced  Int      @default(0) @map("games_synced")
+  standingsOk  Boolean  @default(false) @map("standings_ok")
+  aiUpdated    Int      @default(0) @map("ai_updated")
+  message      String?  @db.VarChar(300)
+  detail       String?
+  ranAt        DateTime @default(now()) @map("ran_at") @db.Timestamptz
+
+  @@map("daily_update_log")
+}

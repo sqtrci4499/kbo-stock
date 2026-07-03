@@ -1,0 +1,240 @@
+/* Pretendard 웹폰트 */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+@import "tailwindcss";
+
+
+@theme {
+  /* ── 메인 컬러 팔레트 ── */
+  --color-navy:      #0f172a;
+  --color-navy-80:   #1e293b;
+  --color-navy-60:   #334155;
+  --color-primary:   #1251aa;
+  --color-primary-h: #0f3f87;
+
+  /* ── 배경 ── */
+  --color-bg:        #f4f6fa;
+  --color-surface:   #ffffff;
+  --color-surface2:  #f8fafc;
+  --color-surface3:  #f1f5f9;
+
+  /* ── 테두리 ── */
+  --color-line:      #e2e8f0;
+  --color-line2:     #cbd5e1;
+
+  /* ── 텍스트 ── */
+  --color-text:      #0f172a;
+  --color-text-2:    #475569;
+  --color-text-3:    #94a3b8;
+
+  /* ── 시세 ── */
+  --color-up:        #0ab07a;
+  --color-up-bg:     #ecfdf5;
+  --color-down:      #e53e3e;
+  --color-down-bg:   #fff5f5;
+
+  /* ── 포인트 ── */
+  --color-accent:    #1251aa;
+  --color-accent-h:  #0f3f87;
+  --color-gold:      #d97706;
+
+  /* ── 폰트 ── */
+  --font-sans: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+/* ── 기본 리셋 ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f4f6fa;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+/* ── 스크롤바 ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── 선택 ── */
+::selection { background: #dbeafe; color: #1251aa; }
+
+/* ── 유틸리티 (Tailwind v4 @layer utilities 대신 직접) ── */
+.text-up   { color: #0ab07a !important; }
+.text-down { color: #e53e3e !important; }
+.bg-up     { background-color: #ecfdf5; }
+.bg-down   { background-color: #fff5f5; }
+
+.font-num  { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+/* ── 애니메이션 ── */
+@keyframes flash-up {
+  0%, 100% { background-color: transparent; }
+  50%       { background-color: #ecfdf5; }
+}
+@keyframes flash-down {
+  0%, 100% { background-color: transparent; }
+  50%       { background-color: #fff5f5; }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-flash-up   { animation: flash-up 0.6s ease; }
+.animate-flash-down { animation: flash-down 0.6s ease; }
+.animate-pulse-dot  { animation: pulse-dot 1.5s ease-in-out infinite; }
+.animate-slide-up   { animation: slide-up 0.3s ease; }
+.animate-fade-in    { animation: fade-in 0.4s ease; }
+
+/* ── 카드 ── */
+.card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+.card-sm {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+/* ── 입력 ── */
+.input-base {
+  width: 100%;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input-base:focus { border-color: #1251aa; }
+.input-base::placeholder { color: #94a3b8; }
+
+/* ── 버튼 ── */
+.btn-primary {
+  background: #1251aa;
+  color: white;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #0f3f87; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── 배지 ── */
+.badge-up   { background: #ecfdf5; color: #0ab07a; padding: 3px 8px; border-radius: 5px; font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
+.badge-down { background: #fff5f5; color: #e53e3e; padding: 3px 8px; border-radius: 5px; font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
+.badge-flat { background: #f1f5f9; color: #64748b; padding: 3px 8px; border-radius: 5px; font-weight: 700; font-size: 12px; }
+
+/* ── 테이블 ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+.data-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background: #f8fafc; cursor: pointer; }
+
+/* ── 모바일 하단 패딩 ── */
+@media (max-width: 767px) {
+  .pb-mobile { padding-bottom: 80px; }
+}
+
+/* ── 반응형 레이아웃 보조 ── */
+.main-content {
+  padding: 20px 16px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  .main-content { padding: 24px 24px; }
+}
+
+/* 모바일: 우측 사이드 패널을 하단으로 */
+.team-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .team-detail-grid { grid-template-columns: 1fr 320px; }
+}
+
+/* 대시보드 우측 TOP5: 모바일에서 숨김 */
+.dashboard-side { display: none; }
+@media (min-width: 1024px) { .dashboard-side { display: flex; flex-direction: column; gap: 12px; } }
+
+/* 포트폴리오 테이블: 모바일 단순화 */
+.portfolio-table-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f8fafc;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.portfolio-table-row:hover { background: #f8fafc; }
+.portfolio-table-cols { display: none; }
+@media (min-width: 640px) {
+  .portfolio-table-row { grid-template-columns: 1fr 90px 90px 110px 100px; }
+  .portfolio-table-cols { display: contents; }
+}
+
+/* 숫자 폰트 */
+.num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+/* ── 앱 레이아웃 ── */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden;
+}
+.app-content {
+  flex: 1;
+  padding: 20px 16px;
+  max-width: 100%;
+}
+@media (min-width: 768px) {
+  .app-content { padding: 24px; }
+}
+
+/* ── md:flex / md:block / md:hidden 수동 정의 (Tailwind v4 호환) ── */
+@media (min-width: 768px) {
+  .md\:flex   { display: flex   !important; }
+  .md\:block  { display: block  !important; }
+  .md\:hidden { display: none   !important; }
+  .md\:grid   { display: grid   !important; }
+}
