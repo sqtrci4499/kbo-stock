@@ -67,7 +67,10 @@ export function calculateAiPrediction(input: TeamAiInput): AiPredictionResult {
   const rankPoints        = ((5.5 - clamp(input.rank, 1, 10)) / 4.5) * WEIGHTS.rankScale;
   const streakPoints      = clamp(input.streak, -WEIGHTS.streakClamp, WEIGHTS.streakClamp) * WEIGHTS.streak;
   const last5Wins         = countWins(input.last5);
-  const last5Points       = (last5Wins - 2.5) * WEIGHTS.last5;
+  // game_results 히스토리가 아직 5경기 미만으로 쌓인 팀은 last5가 빈 문자열이거나 짧을 수 있음.
+  // 이걸 "5경기 다 패배"로 잘못 해석해 부당하게 감점하지 않도록, 데이터가 아예 없으면 중립(0점) 처리.
+  const hasLast5Data      = input.last5.length > 0;
+  const last5Points       = hasLast5Data ? (last5Wins - 2.5) * WEIGHTS.last5 : 0;
   const gamesBehindPoints = -clamp(input.gamesBehind, 0, WEIGHTS.gamesBehindClamp) * WEIGHTS.gamesBehind;
   const recentPricePoints = clamp(input.recentPriceChange * WEIGHTS.recentPriceChange, -WEIGHTS.recentPriceChangeClamp, WEIGHTS.recentPriceChangeClamp);
   const todayPoints       = clamp(input.todayChangeRate * WEIGHTS.todayChangeRate, -WEIGHTS.todayChangeRateClamp, WEIGHTS.todayChangeRateClamp);
@@ -96,7 +99,7 @@ export function calculateAiPrediction(input: TeamAiInput): AiPredictionResult {
   else if (aiScore >= 30) recommendation = "관망";
   else recommendation = "주의";
 
-  const comment = buildComment(input, recommendation, factors, last5Wins);
+  const comment = buildComment(input, recommendation, factors, last5Wins, hasLast5Data);
 
   return { teamId: input.teamId, aiScore, stars, recommendation, comment, factors };
 }
@@ -106,7 +109,8 @@ function buildComment(
   input: TeamAiInput,
   rec: Recommendation,
   factors: Record<string, number>,
-  last5Wins: number
+  last5Wins: number,
+  hasLast5Data: boolean
 ): string {
   const sentences: string[] = [];
 
@@ -121,13 +125,14 @@ function buildComment(
   sentences.push(HEADLINE[rec]);
 
   // 2문장: 가장 영향이 큰 긍정/부정 요인 하나씩 실제 수치로 언급
+  // (최근5경기 데이터가 아직 없는 팀은 last5Wins를 근거로 쓰지 않음 — "0승"이 아니라 "데이터 없음"이므로)
   if (input.streak >= 3) {
     sentences.push(`${input.streak}연승 중으로 최근 상승세가 뚜렷합니다.`);
   } else if (input.streak <= -3) {
     sentences.push(`${Math.abs(input.streak)}연패 중으로 최근 하락 압력이 큽니다.`);
-  } else if (last5Wins >= 4) {
+  } else if (hasLast5Data && last5Wins >= 4) {
     sentences.push(`최근 5경기 ${last5Wins}승으로 경기력이 좋습니다.`);
-  } else if (last5Wins <= 1) {
+  } else if (hasLast5Data && last5Wins <= 1) {
     sentences.push(`최근 5경기 ${last5Wins}승에 그쳐 경기력이 아쉽습니다.`);
   } else if (input.rank <= 3) {
     sentences.push(`현재 ${input.rank}위로 상위권을 유지하고 있습니다.`);
