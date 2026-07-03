@@ -67,6 +67,9 @@ export function calculateAiPrediction(input: TeamAiInput): AiPredictionResult {
   const rankPoints        = ((5.5 - clamp(input.rank, 1, 10)) / 4.5) * WEIGHTS.rankScale;
   const streakPoints      = clamp(input.streak, -WEIGHTS.streakClamp, WEIGHTS.streakClamp) * WEIGHTS.streak;
   const last5Wins         = countWins(input.last5);
+  const hasLast5Data      = input.last5.length > 0;
+  const last5Points       = hasLast5Data ? (last5Wins - 2.5) *
+  WEIGHTS.last5 : 0;
   // game_results 히스토리가 아직 5경기 미만으로 쌓인 팀은 last5가 빈 문자열이거나 짧을 수 있음.
   // 이걸 "5경기 다 패배"로 잘못 해석해 부당하게 감점하지 않도록, 데이터가 아예 없으면 중립(0점) 처리.
   const hasLast5Data      = input.last5.length > 0;
@@ -112,6 +115,8 @@ function buildComment(
   last5Wins: number,
   hasLast5Data: boolean
 ): string {
+  hasLast5Data: boolean
+): string {
   const sentences: string[] = [];
 
   // 1문장: 등급별 총평
@@ -130,7 +135,7 @@ function buildComment(
     sentences.push(`${input.streak}연승 중으로 최근 상승세가 뚜렷합니다.`);
   } else if (input.streak <= -3) {
     sentences.push(`${Math.abs(input.streak)}연패 중으로 최근 하락 압력이 큽니다.`);
-  } else if (hasLast5Data && last5Wins >= 4) {
+  } } else if (hasLast5Data && last5Wins >= 4) {
     sentences.push(`최근 5경기 ${last5Wins}승으로 경기력이 좋습니다.`);
   } else if (hasLast5Data && last5Wins <= 1) {
     sentences.push(`최근 5경기 ${last5Wins}승에 그쳐 경기력이 아쉽습니다.`);
