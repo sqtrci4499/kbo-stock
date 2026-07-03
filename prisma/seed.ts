@@ -27,7 +27,7 @@ if (!DATABASE_URL) {
   console.error("❌ DATABASE_URL이 설정되지 않았습니다.");
   console.error("   .env 파일에 DATABASE_URL을 추가하거나");
   console.error("   환경변수를 직접 설정해주세요.");
-  console.error("   예: DATABASE_URL=postgresql://postgres:dndshaud123@localhost:5432/kboinvest");
+  console.error("   예: DATABASE_URL=postgresql://kbo:kbo1234@localhost:5432/kboinvest");
   process.exit(1);
 }
 
