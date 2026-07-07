@@ -23,6 +23,8 @@ export async function GET() {
         ap.stars         AS "stars",
         ap.recommendation AS "recommendation",
         ap.comment       AS "comment",
+        ap.admin_comment AS "adminComment",
+        ap.admin_comment_updated_at AS "adminCommentUpdatedAt",
         ap.updated_at    AS "updatedAt"
       FROM teams t
       LEFT JOIN team_stats ts ON ts.team_id = t.id

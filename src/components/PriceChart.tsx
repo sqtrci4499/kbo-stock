@@ -8,10 +8,11 @@ interface PricePoint {
 
 interface Props { teamId: string; teamColor: string; }
 
+// 3개월(90일) 옵션은 아직 실 데이터가 90일치 쌓이지 않아 30일과 동일하게 보여서 제거함.
+// 데이터가 충분히 쌓이면(2026년 10월경 이후) 다시 추가 검토.
 const PERIODS = [
   { label: "7일",   days: 7  },
   { label: "1개월", days: 30 },
-  { label: "3개월", days: 90 },
 ];
 
 export default function PriceChart({ teamId, teamColor }: Props) {

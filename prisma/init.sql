@@ -258,10 +258,17 @@ CREATE TABLE IF NOT EXISTS ai_predictions (
   ai_score       INT         NOT NULL DEFAULT 50,  -- 0~100
   stars          INT         NOT NULL DEFAULT 3,   -- 1~5
   recommendation VARCHAR(20) NOT NULL DEFAULT '보유', -- 적극 매수 | 매수 | 보유 | 관망 | 주의
-  comment        TEXT        NOT NULL DEFAULT '',
+  comment        TEXT        NOT NULL DEFAULT '',  -- AI 자동 생성 코멘트 (데이터 기반)
+  admin_comment  TEXT,                              -- 관리자가 직접 작성한 야구 코멘트 (선택)
+  admin_comment_updated_at TIMESTAMPTZ,             -- 관리자 코멘트 마지막 작성/수정 시각
+  admin_comment_by VARCHAR(50),                     -- 작성한 관리자 닉네임
   factors        JSONB,      -- 점수 산출에 쓰인 개별 요인 (디버깅/투명성 목적)
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- 기존 DB에 이미 ai_predictions가 있는 경우를 위한 안전한 컬럼 추가
+ALTER TABLE ai_predictions ADD COLUMN IF NOT EXISTS admin_comment TEXT;
+ALTER TABLE ai_predictions ADD COLUMN IF NOT EXISTS admin_comment_updated_at TIMESTAMPTZ;
+ALTER TABLE ai_predictions ADD COLUMN IF NOT EXISTS admin_comment_by VARCHAR(50);
 
 -- ── v9: 일일 자동 업데이트 실행 로그 (23:59 KST 배치 / 관리자 수동 실행 겸용) ──
 CREATE TABLE IF NOT EXISTS daily_update_log (

@@ -14,7 +14,7 @@ interface Game {
 interface SettleResult { teamName: string; prevClose: number; newClose: number; changeRate: number; }
 interface User { id: string; nickname: string; email: string; role: string; status: string; totalAsset: string; createdAt: string; }
 
-type Tab = "games" | "price" | "users" | "notice" | "session" | "reset" | "sync";
+type Tab = "games" | "price" | "users" | "notice" | "session" | "reset" | "sync" | "comments";
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
@@ -83,6 +83,45 @@ export default function AdminPage() {
     fetchGames();
   }, [fetchTeams, fetchGames]);
   useEffect(() => { if (tab === "users") fetchUsers(); }, [tab, fetchUsers]);
+
+  // ── AI 코멘트 관리 ──────────────────────────────
+  const [teamComments, setTeamComments] = useState<{
+    teamId: string; name: string; shortName: string;
+    adminComment: string | null; adminCommentUpdatedAt: string | null; adminCommentBy: string | null;
+  }[]>([]);
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [commentSaving, setCommentSaving] = useState<string | null>(null);
+  const [commentMsg, setCommentMsg] = useState<Record<string, string>>({});
+
+  const fetchTeamComments = useCallback(() => {
+    fetch("/api/admin/ai-predictions/comments").then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d)) {
+          setTeamComments(d);
+          setCommentDrafts(Object.fromEntries(d.map((t: any) => [t.teamId, t.adminComment ?? ""])));
+        }
+      }).catch(() => {});
+  }, []);
+  useEffect(() => { if (tab === "comments") fetchTeamComments(); }, [tab, fetchTeamComments]);
+
+  const handleSaveComment = async (teamId: string) => {
+    setCommentSaving(teamId);
+    setCommentMsg(prev => ({ ...prev, [teamId]: "" }));
+    try {
+      const res = await fetch("/api/admin/ai-predictions/comment", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId, comment: commentDrafts[teamId] ?? "" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "저장 실패");
+      setCommentMsg(prev => ({ ...prev, [teamId]: "✅ 저장됨" }));
+      fetchTeamComments();
+    } catch (e: any) {
+      setCommentMsg(prev => ({ ...prev, [teamId]: `⚠️ ${e.message}` }));
+    } finally {
+      setCommentSaving(null);
+    }
+  };
 
   const handleUserRoleToggle = async (u: User) => {
     const nextRole = u.role === "admin" ? "user" : "admin";
@@ -319,6 +358,7 @@ export default function AdminPage() {
     { k: "session", label: "🕐 거래 세션" },
     { k: "reset",   label: "🔄 시즌 초기화" },
     { k: "sync",    label: "🔗 v6 동기화" },
+    { k: "comments", label: "📝 AI 코멘트" },
   ];
 
   return (
@@ -836,8 +876,64 @@ export default function AdminPage() {
           </div>
 
           <div style={{ padding: "12px 16px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, fontSize: 11, color: "#92400e" }}>
-            💡 <strong>Vercel Cron</strong>이 설정되어 있으면 매분 자동으로 경기 동기화가 실행됩니다.
+            💡 <strong>Vercel Cron</strong>이 매일 한국시간 23:59에 자동으로 일일 업데이트를 실행합니다.
             수동 버튼은 즉시 테스트하거나 긴급 동기화가 필요할 때 사용하세요.
+          </div>
+        </div>
+      )}
+
+      {/* ── AI 코멘트 관리 탭 ── */}
+      {tab === "comments" && (
+        <div style={{ maxWidth: 640 }}>
+          <div style={{ marginBottom: 16 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 800, marginBottom: 4 }}>📝 팀별 AI 코멘트 관리</h2>
+            <p style={{ fontSize: 12, color: "#64748b" }}>
+              팀마다 야구 관련 코멘트를 짧게 작성해두면, AI 예측 페이지에 데이터 기반 자동 분석과
+              함께(구분되어) 표시됩니다. <strong>매주 일요일 저녁~월요일 장 시작 전</strong>에
+              작성/수정하는 걸 권장합니다 (매매는 월요일에만 가능합니다).
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {teamComments.map(t => (
+              <div key={t.teamId} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{t.name}</div>
+                  {t.adminCommentUpdatedAt && (
+                    <div style={{ fontSize: 10.5, color: "#94a3b8" }}>
+                      {t.adminCommentBy ?? "관리자"} · {new Date(t.adminCommentUpdatedAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })} 수정
+                    </div>
+                  )}
+                </div>
+                <textarea
+                  value={commentDrafts[t.teamId] ?? ""}
+                  onChange={e => setCommentDrafts(prev => ({ ...prev, [t.teamId]: e.target.value }))}
+                  placeholder="예: 이번 주 선발 로테이션이 탄탄합니다. 주말 3연전 스윕으로 분위기가 좋습니다."
+                  maxLength={300}
+                  rows={2}
+                  style={{
+                    width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2e8f0",
+                    fontFamily: "inherit", fontSize: 13, resize: "vertical", boxSizing: "border-box",
+                  }}
+                />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                  <span style={{ fontSize: 11, color: commentMsg[t.teamId]?.startsWith("⚠️") ? "#dc2626" : "#0ab07a" }}>
+                    {commentMsg[t.teamId]}
+                  </span>
+                  <button onClick={() => handleSaveComment(t.teamId)} disabled={commentSaving === t.teamId} style={{
+                    padding: "7px 16px", borderRadius: 7, border: "none", fontFamily: "inherit",
+                    background: commentSaving === t.teamId ? "#e2e8f0" : "#1251aa",
+                    color: commentSaving === t.teamId ? "#94a3b8" : "white",
+                    fontWeight: 700, fontSize: 12, cursor: commentSaving === t.teamId ? "wait" : "pointer",
+                  }}>
+                    {commentSaving === t.teamId ? "저장 중..." : "저장"}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {teamComments.length === 0 && (
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8", fontSize: 13 }}>불러오는 중...</div>
+            )}
           </div>
         </div>
       )}
