@@ -232,6 +232,7 @@ body {
 }
 
 /* ── md:flex / md:block / md:hidden 수동 정의 (Tailwind v4 호환) ── */
+.hidden { display: none; }
 @media (min-width: 768px) {
   .md\:flex   { display: flex   !important; }
   .md\:block  { display: block  !important; }
