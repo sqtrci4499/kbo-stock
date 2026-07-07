@@ -12,6 +12,7 @@ interface TeamPrediction {
   streak: number; last5: string;
   aiScore: number | null; stars: number | null;
   recommendation: string | null; comment: string | null;
+  adminComment: string | null; adminCommentUpdatedAt: string | null;
   updatedAt: string | null;
 }
 
@@ -129,7 +130,25 @@ export default function PredictionsPage() {
                   )}
                 </div>
 
+                {t.adminComment && (
+                  <div style={{
+                    fontSize: 12.5, color: "#1e3a5f", lineHeight: 1.6, background: "#eff6ff",
+                    border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", marginBottom: 8,
+                  }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 800, color: "#1251aa", marginBottom: 4 }}>
+                      📝 담당자 코멘트
+                      {t.adminCommentUpdatedAt && (
+                        <span style={{ fontWeight: 500, color: "#64748b", marginLeft: 6 }}>
+                          {new Date(t.adminCommentUpdatedAt).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" })}
+                        </span>
+                      )}
+                    </div>
+                    {t.adminComment}
+                  </div>
+                )}
+
                 <p style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.6, background: "#f8fafc", borderRadius: 8, padding: "10px 12px", margin: 0 }}>
+                  <span style={{ fontSize: 10.5, fontWeight: 800, color: "#64748b", display: "block", marginBottom: 4 }}>🤖 AI 데이터 분석</span>
                   {t.comment || "코멘트가 아직 생성되지 않았습니다."}
                 </p>
               </div>
