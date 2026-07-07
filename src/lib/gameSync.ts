@@ -88,7 +88,7 @@ async function upsertOneGame(
        status, stadium, inning, game_time, current_status_text,
        winner_team_id, loser_team_id, external_id, source, last_synced_at, updated_at)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW())
-    ON CONFLICT (external_id) DO UPDATE SET
+    ON CONFLICT (external_id) WHERE external_id IS NOT NULL DO UPDATE SET
       home_score           = EXCLUDED.home_score,
       away_score            = EXCLUDED.away_score,
       status                 = EXCLUDED.status,
