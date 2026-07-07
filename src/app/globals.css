@@ -185,9 +185,11 @@ body {
   .team-detail-grid { grid-template-columns: 1fr 320px; }
 }
 
-/* 대시보드 우측 TOP5: 모바일에서 숨김 */
+/* 대시보드 우측 KBO 순위 — 모바일에선 본문 아래로 쌓이고, 데스크탑에서만 우측 사이드에 배치됨
+   (home-main-grid가 모바일에서 1단이라 자연스럽게 아래로 쌓임) */
 .dashboard-side { display: flex; flex-direction: column; gap: 12px; }
 
+/* 홈 화면 메인 그리드 — 모바일에선 1단, 데스크탑(1024px+)에서만 2단(본문+280px 사이드) */
 .home-main-grid {
   display: grid;
   grid-template-columns: 1fr;

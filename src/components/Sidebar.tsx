@@ -23,7 +23,7 @@ export default function Sidebar() {
       width: 220, flexShrink: 0,
       background: "white",
       borderRight: "1px solid #e2e8f0",
-      display: "flex", flexDirection: "column",
+      flexDirection: "column",
       position: "sticky", top: 0, height: "100vh",
       overflow: "hidden"
     }} className="hidden md:flex">
