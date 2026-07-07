@@ -1,5 +1,3 @@
-
-Priceengine fixed · TS
 /**
  * KBO STOCK - 주가 정산 엔진
  * 경기 종료 후 호출하여 두 팀의 주가를 자동 계산·저장합니다.
