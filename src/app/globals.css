@@ -186,8 +186,17 @@ body {
 }
 
 /* 대시보드 우측 TOP5: 모바일에서 숨김 */
-.dashboard-side { display: none; }
-@media (min-width: 1024px) { .dashboard-side { display: flex; flex-direction: column; gap: 12px; } }
+.dashboard-side { display: flex; flex-direction: column; gap: 12px; }
+
+.home-main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .home-main-grid { grid-template-columns: 1fr 280px; }
+}
 
 /* 포트폴리오 테이블: 모바일 단순화 */
 .portfolio-table-row {

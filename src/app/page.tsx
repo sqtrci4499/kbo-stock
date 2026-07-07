@@ -243,7 +243,7 @@ export default function HomePage() {
       </div>
 
       {/* 메인 레이아웃: 종목 리스트 + TOP5 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16, alignItems: "start" }}>
+      <div className="home-main-grid">
 
         {/* 전체 종목 */}
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
