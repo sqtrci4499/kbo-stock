@@ -11,6 +11,7 @@
  */
 
 import { query, execute } from "./db";
+import { synthesizeTeamComment } from "./aiSynthesis";
 
 // ── 가중치 (여기서만 조정하면 전체 반영) ──────────────
 // 모든 팀은 50점(중립)에서 시작해서, 각 지표가 "평균"에서 얼마나 벗어났는지에 따라
@@ -159,6 +160,7 @@ interface TeamRow {
   streak: number;
   last5: string;
   games_behind: number;
+  admin_comment: string | null;
 }
 
 interface PriceRow {
@@ -176,9 +178,11 @@ export async function regenerateAiPredictions(): Promise<{ success: boolean; cou
              COALESCE(ts.win_rate, 0)     AS win_rate,
              COALESCE(ts.streak, 0)       AS streak,
              COALESCE(ts.last5, '')       AS last5,
-             COALESCE(ts.games_behind, 0) AS games_behind
+             COALESCE(ts.games_behind, 0) AS games_behind,
+             ap.admin_comment              AS admin_comment
       FROM teams t
       LEFT JOIN team_stats ts ON ts.team_id = t.id
+      LEFT JOIN ai_predictions ap ON ap.team_id = t.id
       WHERE t.is_active = true
     `);
 
@@ -213,6 +217,18 @@ export async function regenerateAiPredictions(): Promise<{ success: boolean; cou
         recentPriceChange,
       });
 
+      // 담당자 코멘트가 있으면 AI 데이터 분석과 하나로 합성한다.
+      // (합성 실패/API 키 미설정 시에는 단순 결합 문장으로 대체 — 완전히 안 보이는 것 방지)
+      let finalComment = result.comment;
+      if (t.admin_comment && t.admin_comment.trim().length > 0) {
+        const synthesized = await synthesizeTeamComment({
+          teamName: t.name,
+          adminComment: t.admin_comment.trim(),
+          autoComment: result.comment,
+        });
+        finalComment = synthesized ?? `${t.admin_comment.trim()} ${result.comment}`;
+      }
+
       await execute(`
         INSERT INTO ai_predictions (team_id, ai_score, stars, recommendation, comment, factors, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
@@ -223,7 +239,7 @@ export async function regenerateAiPredictions(): Promise<{ success: boolean; cou
           comment = EXCLUDED.comment,
           factors = EXCLUDED.factors,
           updated_at = NOW()
-      `, [result.teamId, result.aiScore, result.stars, result.recommendation, result.comment, JSON.stringify(result.factors)]);
+      `, [result.teamId, result.aiScore, result.stars, result.recommendation, finalComment, JSON.stringify(result.factors)]);
 
       updated += 1;
     }
