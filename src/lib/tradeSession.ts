@@ -1,6 +1,6 @@
 /**
  * KBO STOCK - 거래 세션 관리
- * 기본: 매주 월요일 00:00 ~ 23:59 KST
+ * 기본: 매주 월요일 18:00 ~ 화요일 18:00 KST (24시간)
  * 관리자가 trade_sessions 테이블로 수동 오버라이드 가능
  */
 
@@ -29,29 +29,37 @@ export async function getTradeStatus(): Promise<TradeStatus> {
     return { isOpen: true, reason: "관리자 지정 거래 세션" };
   }
 
-  // 2. 기본 규칙: 월요일 (KST = UTC+9)
+  // 2. 기본 규칙: 월요일 18:00 ~ 화요일 18:00 (KST = UTC+9)
   const now   = new Date();
-  // KST로 변환
+  // KST로 변환 (kst는 "KST 벽시계 시각"을 UTC getter로 읽기 위한 트릭이며
+  // 실제 UTC 타임스탬프가 아님에 유의)
   const kstMs = now.getTime() + 9 * 60 * 60 * 1000;
   const kst   = new Date(kstMs);
-  const day   = kst.getUTCDay(); // 0=일, 1=월 ...
+  const day   = kst.getUTCDay();   // 0=일, 1=월, 2=화 ...
+  const hour  = kst.getUTCHours(); // KST 기준 시(0~23)
 
-  if (day === 1) {
-    return { isOpen: true, reason: "월요일 정규 거래 시간" };
+  const isMondayAfter18   = day === 1 && hour >= 18;
+  const isTuesdayBefore18 = day === 2 && hour < 18;
+
+  if (isMondayAfter18 || isTuesdayBefore18) {
+    return { isOpen: true, reason: "정규 거래 시간 (월 18:00 ~ 화 18:00)" };
   }
 
-  // 다음 월요일 계산
-  const daysUntilMon = (8 - day) % 7 || 7;
+  // 다음 오픈 시각(다음 월요일 18:00 KST) 계산
+  // 오늘이 월요일인데 아직 18시 전이면 -> 이번 주 월요일 18:00
+  // 그 외에는 다음 주 월요일 18:00
+  const daysUntilMon = day === 1 ? 0 : (8 - day) % 7 || 7;
   const nextMon      = new Date(kstMs);
   nextMon.setUTCDate(nextMon.getUTCDate() + daysUntilMon);
-  nextMon.setUTCHours(0, 0, 0, 0);
-  const nextMonKST   = new Date(nextMon.getTime() - 9 * 60 * 60 * 1000);
+  nextMon.setUTCHours(18, 0, 0, 0);
+  // kst 트릭으로 만든 "가짜 UTC" 시각을 실제 UTC로 되돌림
+  const nextMonUTC   = new Date(nextMon.getTime() - 9 * 60 * 60 * 1000);
 
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
   return {
     isOpen:  false,
-    reason:  `거래는 매주 월요일에만 가능합니다. (오늘: ${dayNames[day]}요일)`,
-    opensAt: nextMonKST.toISOString(),
+    reason:  `거래는 매주 월요일 18:00 ~ 화요일 18:00에만 가능합니다. (오늘: ${dayNames[day]}요일 ${hour}시)`,
+    opensAt: nextMonUTC.toISOString(),
   };
 }
 
