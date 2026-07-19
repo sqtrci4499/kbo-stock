@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTradeStatus } from "@/lib/tradeSession";
 import { queryOne, transaction } from "@/lib/db";
 import { requireUser, toClientUser } from "@/lib/session";
+import { recalcUserAsset } from "@/lib/priceEngine";
 import type { PoolClient } from "pg";
 
 export async function POST(req: NextRequest) {
@@ -111,6 +112,9 @@ export async function POST(req: NextRequest) {
         "UPDATE team_stats SET holder_count = $1 WHERE team_id = $2",
         [parseInt(hcRow.rows[0].count), teamId]
       );
+
+      // 총 자산/수익률 즉시 재계산 (다음 정산까지 기다리지 않고 랭킹에 바로 반영)
+      await recalcUserAsset(client, user.id);
 
       const updUser = await client.query<{ cash: number }>(
         "SELECT cash FROM users WHERE id = $1",

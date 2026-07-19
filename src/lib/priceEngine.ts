@@ -190,6 +190,45 @@ function calcSupplyScore(buy: number, sell: number): number {
   return ((buy - sell) / total) * 0.10; // 최대 ±10%
 }
  
+// ── 단일 유저 총 자산/수익률 재계산 (거래 직후 즉시 반영용) ──
+//
+// 매수/매도는 users.cash만 바꾸고 total_asset/profit_rate는 그대로 두면,
+// 랭킹·프로필에 표시되는 값이 다음 정산(경기 종료 또는 일일 배치)까지
+// 거래 이전 상태로 남아 "계정별로 수익률이 제때 반영 안 되는" 문제가 생긴다.
+// buy/sell 라우트의 트랜잭션 안에서 client와 함께 호출해 즉시 반영한다.
+export async function recalcUserAsset(
+  client: { query: (sql: string, params?: unknown[]) => Promise<unknown> },
+  userId: string
+): Promise<void> {
+  await client.query(`
+    UPDATE users u SET
+      total_asset = u.cash + COALESCE((
+        SELECT SUM(p.quantity * tp.close)
+        FROM portfolios p
+        JOIN LATERAL (
+          SELECT close FROM team_prices
+          WHERE team_id = p.team_id
+          ORDER BY date DESC LIMIT 1
+        ) tp ON true
+        WHERE p.user_id = u.id AND p.quantity > 0
+      ), 0),
+      profit_rate = (
+        u.cash + COALESCE((
+          SELECT SUM(p.quantity * tp.close)
+          FROM portfolios p
+          JOIN LATERAL (
+            SELECT close FROM team_prices
+            WHERE team_id = p.team_id
+            ORDER BY date DESC LIMIT 1
+          ) tp ON true
+          WHERE p.user_id = u.id AND p.quantity > 0
+        ), 0) - 10000000.0
+      ) / 10000000.0,
+      updated_at = NOW()
+    WHERE u.id = $1
+  `, [userId]);
+}
+
 // ── 전체 유저 총 자산 재계산 ────────────────────────────
 export async function recalcAllUserAssets(): Promise<void> {
   // 포트폴리오 평가금 집계
